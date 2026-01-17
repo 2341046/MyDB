@@ -2,7 +2,7 @@
 
 ## 概要
 本プロジェクトは、データベース最終課題として作成した、カテゴリ管理機能付きの TODO アプリケーションです。
-Docker Compose を用いて、 **Web / Application / Database の 3層構成** を構築しています。
+Docker Compose を用いて、 Web / Application / Database の 3層構成 を構築しています。
 
 ---
 

@@ -45,12 +45,12 @@ my-todo-app/
 ---
 
 ## 起動方法
-*docker compose up -d --build
+*　docker compose up -d --build
 
 ---
 
 ## アクセス先
-* **TODO アプリ画面**: http://127.0.0.1:8080/todo
+* TODO アプリ画面: http://127.0.0.1:8080/todo
 
-* **users 一覧（JSON）**: http://127.0.0.1:8080/
+* users 一覧（JSON）: http://127.0.0.1:8080/
 

@@ -1,117 +1,17 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8">
-  <title>TODOリスト</title>
-
-  <style>
-    .category-box {
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin-bottom: 16px;
-      border-radius: 6px;
-    }
-
-    .category-title {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-weight: bold;
-      margin-bottom: 6px;
-    }
-
-    .category-title button {
-      font-size: 12px;
-    }
-
-    .note {
-      font-size: 12px;
-      color: #555;
-      margin-top: 6px;
-      margin-bottom: 12px;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <title>User List</title>
 </head>
 <body>
+  <h1>Users</h1>
 
-  <h1>TODOリスト</h1>
-
-  <!-- カテゴリ追加 -->
-  <h2>カテゴリ追加</h2>
-  <form action="/add_category" method="post">
-    <input type="text" name="category_name" placeholder="新しいカテゴリ名" required>
-    <button type="submit">カテゴリを追加</button>
-  </form>
-
-  <!-- ★同名入力したときだけ出るメッセージ -->
-  {% with messages = get_flashed_messages() %}
-    {% if messages %}
-      <div class="note">
-        {% for msg in messages %}
-          {{ msg }}
-        {% endfor %}
-      </div>
-    {% endif %}
-  {% endwith %}
-
-  <!-- タスク追加 -->
-  <h2>タスク追加</h2>
-  <form action="/add" method="post">
-    <input type="text" name="title" placeholder="タスク名" required>
-    <select name="category_id" required>
-      {% for c in categories %}
-        <option value="{{ c[0] }}">{{ c[1] }}</option>
-      {% endfor %}
-    </select>
-    <button type="submit">追加</button>
-  </form>
-
-  <!-- 一覧 -->
-  <h2>一覧</h2>
-
-  {% for c in categories %}
-    <div class="category-box">
-
-      <div class="category-title">
-        <span>{{ c[1] }}</span>
-
-        <!-- カテゴリ削除（確認ダイアログ付き） -->
-        <form action="/delete_category/{{ c[0] }}"
-              method="post"
-              style="display:inline;"
-              onsubmit="return confirm('本当にこのカテゴリを削除しますか？\nこのカテゴリ内のタスクもすべて削除されます。');">
-          <button type="submit">カテゴリ削除</button>
-        </form>
-      </div>
-
-      <ul>
-        {% for t in tasks %}
-          {% if t[2] == c[1] %}
-            <li>
-              {% if t[3] %}
-                <s>{{ t[1] }}</s>
-              {% else %}
-                {{ t[1] }}
-              {% endif %}
-
-              <!-- 完了 / 未完了 -->
-              <form action="/toggle/{{ t[0] }}" method="post" style="display:inline;">
-                <button type="submit" style="margin-left:8px;">
-                  {% if t[3] %}未完了{% else %}完了{% endif %}
-                </button>
-              </form>
-
-              <!-- タスク削除 -->
-              <form action="/delete/{{ t[0] }}" method="post" style="display:inline;">
-                <button type="submit">削除</button>
-              </form>
-            </li>
-          {% endif %}
-        {% endfor %}
-      </ul>
-
-    </div>
-  {% endfor %}
+  <ul>
+    {% for user in users %}
+      <li>{{ user.id }} : {{ user.username }}</li>
+    {% endfor %}
+  </ul>
 
 </body>
 </html>

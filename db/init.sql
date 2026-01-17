@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(80) UNIQUE NOT NULL
+);
+
+INSERT INTO users (username) VALUES ('John Doe') ON CONFLICT (username) DO NOTHING;
+INSERT INTO users (username) VALUES ('Micheal') ON CONFLICT (username) DO NOTHING;
+INSERT INTO users (username) VALUES ('Bob Johnson') ON CONFLICT (username) DO NOTHING;
+
+CREATE TABLE IF NOT EXISTS categories (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(80) UNIQUE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS tasks (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(200) NOT NULL,
+  done BOOLEAN NOT NULL DEFAULT FALSE,
+  category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE
+);
+
+INSERT INTO categories (name) VALUES ('仕事') ON CONFLICT (name) DO NOTHING;
+INSERT INTO categories (name) VALUES ('生活') ON CONFLICT (name) DO NOTHING;

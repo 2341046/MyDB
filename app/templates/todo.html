@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>TODO</title>
+  <style>
+    .box{
+      border:1px solid #ccc;
+      padding:16px;
+      margin:16px 0;
+      border-radius:8px;
+    }
+    .box h2{ margin-top:0; }
+    .actions form{ display:inline; margin-right:8px; }
+    ul{ margin:8px 0 0 20px; }
+  </style>
+</head>
+<body>
+  <h1>TODO</h1>
+
+  <h2>カテゴリ追加</h2>
+  <form method="post" action="/categories/add">
+    <input name="name" placeholder="カテゴリ名" />
+    <button type="submit">追加</button>
+  </form>
+  {% if cat_msg %}
+    <p style="color:red;">{{ cat_msg }}</p>
+  {% endif %}
+
+  <h2>タスク追加</h2>
+  <form method="post" action="/tasks/add">
+    <select name="category_id">
+      <option value="">カテゴリを選択</option>
+      {% for c in categories %}
+        <option value="{{ c.id }}">{{ c.name }}</option>
+      {% endfor %}
+    </select>
+    <input name="title" placeholder="タスク名" />
+    <button type="submit">追加</button>
+  </form>
+  {% if task_msg %}
+    <p style="color:red;">{{ task_msg }}</p>
+  {% endif %}
+
+  <hr />
+
+  {% for c in categories %}
+    <div class="box">
+      <h2>{{ c.name }}</h2>
+
+      <div class="actions">
+        <form method="post" action="/categories/{{ c.id }}/delete" onsubmit="return confirm('カテゴリを削除しますか？');">
+          <button type="submit">カテゴリ削除</button>
+        </form>
+      </div>
+
+      <ul>
+        {% for t in c.tasks %}
+          <li>
+            {% if t.done %}<s>{{ t.title }}</s>{% else %}{{ t.title }}{% endif %}
+
+            <form method="post" action="/tasks/{{ t.id }}/toggle" style="display:inline;">
+              <button type="submit">完了</button>
+            </form>
+
+            <form method="post" action="/tasks/{{ t.id }}/delete" style="display:inline;" onsubmit="return confirm('削除しますか？');">
+              <button type="submit">削除</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endfor %}
+</body>
+</html>

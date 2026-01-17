@@ -1,117 +1,116 @@
-from flask import Flask, request, redirect, render_template, flash
-import psycopg2
+import os
+from dotenv import load_dotenv
+
+from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask_sqlalchemy import SQLAlchemy
+
+load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = "todo-secret-key"
 
-def get_conn():
-    return psycopg2.connect(
-        host="localhost",
-        database="tododb",
-        user="guest",
-        password="password",
-        port=5433
-    )
+db_user = os.getenv("DB_USERNAME")
+db_pass = os.getenv("DB_PASSWORD")
+db_host = os.getenv("DB_HOST")
+db_name = os.getenv("DB_NAME")
 
-@app.route("/", methods=["GET"])
+app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://{db_user}:{db_pass}@{db_host}/{db_name}"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db = SQLAlchemy(app)
+
+
+# users テーブル
+class User(db.Model):
+    __tablename__ = "users"
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+
+
+# TODO用
+class Category(db.Model):
+    __tablename__ = "categories"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(80), unique=True, nullable=False)
+    tasks = db.relationship("Task", backref="category", cascade="all, delete-orphan", lazy=True)
+
+
+class Task(db.Model):
+    __tablename__ = "tasks"
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    done = db.Column(db.Boolean, nullable=False, default=False)
+    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=False)
+
+
+# 課題要件：users を返す（JSON）
+@app.route("/")
 def index():
-    conn = get_conn()
-    cur = conn.cursor()
+    users = User.query.order_by(User.id.asc()).all()
+    return jsonify([{"id": u.id, "username": u.username} for u in users])
 
-    cur.execute("SELECT id, name FROM categories ORDER BY id;")
-    categories = cur.fetchall()
 
-    cur.execute("""
-        SELECT t.id, t.title, c.name, t.is_done, t.created_at
-        FROM tasks t
-        JOIN categories c ON t.category_id = c.id
-        ORDER BY t.created_at DESC, t.id DESC;
-    """)
-    tasks = cur.fetchall()
+# TODO画面
+@app.route("/todo")
+def todo():
+    categories = Category.query.order_by(Category.id.asc()).all()
+    cat_msg = request.args.get("cat_msg", "")
+    task_msg = request.args.get("task_msg", "")
+    return render_template("todo.html", categories=categories, cat_msg=cat_msg, task_msg=task_msg)
 
-    cur.close()
-    conn.close()
-    return render_template("index.html", tasks=tasks, categories=categories)
 
-@app.route("/add", methods=["POST"])
-def add_task():
-    title = request.form.get("title", "").strip()
-    category_id = request.form.get("category_id", "").strip()
-
-    # ★ タスク名が空白
-    if not title:
-        flash("タスク名を入力してください。")
-        return redirect("/")
-
-    if not category_id:
-        return redirect("/")
-
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute(
-        "INSERT INTO tasks (title, category_id) VALUES (%s, %s);",
-        (title, int(category_id))
-    )
-    conn.commit()
-    cur.close()
-    conn.close()
-    return redirect("/")
-
-@app.route("/add_category", methods=["POST"])
+@app.post("/categories/add")
 def add_category():
-    name = request.form.get("category_name", "").strip()
-
-    # ★ カテゴリ名が空白
+    name = (request.form.get("name") or "").strip()
     if not name:
-        flash("カテゴリ名を入力してください。")
-        return redirect("/")
+        return redirect(url_for("todo", cat_msg="カテゴリ名が空です"))
+    if Category.query.filter_by(name=name).first():
+        return redirect(url_for("todo", cat_msg="そのカテゴリ名は既に存在しています"))
+    db.session.add(Category(name=name))
+    db.session.commit()
+    return redirect(url_for("todo"))
 
-    conn = get_conn()
-    cur = conn.cursor()
+
+@app.post("/categories/<int:category_id>/delete")
+def delete_category(category_id: int):
+    c = Category.query.get_or_404(category_id)
+    db.session.delete(c)
+    db.session.commit()
+    return redirect(url_for("todo"))
+
+
+@app.post("/tasks/add")
+def add_task():
+    title = (request.form.get("title") or "").strip()
+    category_id = request.form.get("category_id")
+    if not title:
+        return redirect(url_for("todo", task_msg="タスク名が空です"))
+    if not category_id:
+        return redirect(url_for("todo", task_msg="カテゴリが選択されていません"))
+    db.session.add(Task(title=title, category_id=int(category_id), done=False))
+    db.session.commit()
+    return redirect(url_for("todo"))
+
+
+@app.post("/tasks/<int:task_id>/toggle")
+def toggle_task(task_id: int):
+    t = Task.query.get_or_404(task_id)
+    t.done = not t.done
+    db.session.commit()
+    return redirect(url_for("todo"))
+
+
+@app.post("/tasks/<int:task_id>/delete")
+def delete_task(task_id: int):
+    t = Task.query.get_or_404(task_id)
+    db.session.delete(t)
+    db.session.commit()
+    return redirect(url_for("todo"))
+
+
+@app.route("/health")
+def health():
     try:
-        cur.execute("INSERT INTO categories (name) VALUES (%s);", (name,))
-        conn.commit()
-    except psycopg2.errors.UniqueViolation:
-        conn.rollback()
-        flash("このカテゴリ名はすでに存在しています。")
-    finally:
-        cur.close()
-        conn.close()
-
-    return redirect("/")
-
-@app.route("/toggle/<int:task_id>", methods=["POST"])
-def toggle_task(task_id):
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("UPDATE tasks SET is_done = NOT is_done WHERE id = %s;", (task_id,))
-    conn.commit()
-    cur.close()
-    conn.close()
-    return redirect("/")
-
-@app.route("/delete/<int:task_id>", methods=["POST"])
-def delete_task(task_id):
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM tasks WHERE id = %s;", (task_id,))
-    conn.commit()
-    cur.close()
-    conn.close()
-    return redirect("/")
-
-@app.route("/delete_category/<int:category_id>", methods=["POST"])
-def delete_category(category_id):
-    conn = get_conn()
-    cur = conn.cursor()
-
-    cur.execute("DELETE FROM tasks WHERE category_id = %s;", (category_id,))
-    cur.execute("DELETE FROM categories WHERE id = %s;", (category_id,))
-
-    conn.commit()
-    cur.close()
-    conn.close()
-    return redirect("/")
-
-if __name__ == "__main__":
-    app.run(debug=True)
+        db.session.execute(db.text("SELECT 1"))
+        return jsonify({"status": "ok"}), 200
+    except Exception as e:
+        return jsonify({"status": "ng", "error": str(e)}), 500

@@ -40,7 +40,7 @@ my-todo-app/
     └─ nginx.conf
 ```
 
-※ .env は接続情報を含むため GitHub には含めていません。
+※ .env は GitHub には含めていません。
 
 ---
 

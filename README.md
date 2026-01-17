@@ -38,5 +38,19 @@ my-todo-app/
 │  └─ init.sql
 └─ nginx/
     └─ nginx.conf
+```
+
 ※ .env は接続情報を含むため GitHub には含めていません。
+
+---
+
+## 起動方法
+*docker compose up -d --build
+
+---
+
+## アクセス先
+* **TODO アプリ画面**: http://127.0.0.1:8080/todo
+
+* **users 一覧（JSON）**: http://127.0.0.1:8080/
 

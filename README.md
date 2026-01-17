@@ -46,7 +46,7 @@ my-todo-app/
 
 ## 起動方法
 ```bash
-* docker compose up -d --build
+docker compose up -d --build
 ```
 
 ---

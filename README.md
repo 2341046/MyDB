@@ -44,13 +44,6 @@ my-todo-app/
 
 ---
 
-## 起動方法
-```bash
-docker compose up -d --build
-```
-
----
-
 ## アクセス先
 * TODO アプリ画面: http://127.0.0.1:8080/todo
 
